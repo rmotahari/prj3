@@ -1,50 +1,21 @@
-import socket
-import logging
+from flask import Flask, request, render_template_string
 
-def get_ip_addresses(server_names):
-    ip_addresses = {}
-    logging.basicConfig(filename='ip_lookup.log', level=logging.DEBUG)
-    
-    for server in server_names:
-        server = server.strip()  # Entfernt führende und nachfolgende Leerzeichen
-        try:
-            ip = socket.gethostbyname(server)
-            if ip.startswith('10.60.'):
-                location = 'Buero'
-            elif ip.startswith('10.10.'):
-                location = 'Home Office'
-            else:
-                location = 'Unbekannt'
-            ip_addresses[server] = f"{ip} ({location})"
-        except socket.gaierror as err:
-            logging.error(f"Error resolving {server}: {err}")
-            ip_addresses[server] = f"Error: {err}"
-        except Exception as err:
-            logging.error(f"Unexpected error with {server}: {err}")
-            ip_addresses[server] = f"Error: {err}"
-    
-    return ip_addresses
+app = Flask(__name__)
 
-def write_ip_addresses_to_file(ip_addresses, output_file):
-    try:
-        with open(output_file, 'w') as file:
-            for server, ip in ip_addresses.items():
-                file.write(f"{server}: {ip}\n")
-    except IOError as e:
-        logging.error(f"An I/O error occurred: {e}")
-        return f"Ein Fehler ist aufgetreten: {e}"
-    
-    logging.info("IP addresses successfully exported.")
-    return "IP-Adressen erfolgreich exportiert."
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        name = request.form['name']
+        return render_template_string('''
+            <h1>Hallo, {{ name }}!</h1>
+            <a href="/">Zurück</a>
+        ''', name=name)
+    return '''
+        <form method="post">
+            Dein Name: <input type="text" name="name">
+            <input type="submit" value="Senden">
+        </form>
+    '''
 
-# Beispiel-Verwendung
-server_names = [
-'CMP15873',
-'CMP15874',
-'CMP09063',
-'CMP09203',
-'CMP08278']
-output_file = r'C:\Devops\ip_addresses.txt'
-ip_addresses = get_ip_addresses(server_names)
-result = write_ip_addresses_to_file(ip_addresses, output_file)
-print(result)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
